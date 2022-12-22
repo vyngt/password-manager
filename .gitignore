@@ -1,0 +1,10 @@
+build/
+dist/
+resources/
+*.spec
+.vscode/
+venv/
+__pycache__/
+
+*.db
+*.txt
