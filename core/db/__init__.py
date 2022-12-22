@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 Base = declarative_base()
 
-STORE_PATH = "data/data.db"
+STORE_PATH = "data/vault.vpm"
 
 engine = create_engine(f"sqlite:///{STORE_PATH}", echo=True, future=True)
 
