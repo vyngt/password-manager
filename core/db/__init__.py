@@ -2,11 +2,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import Session
 
+from conf import settings
+
 Base = declarative_base()
 
-STORE_PATH = "data/vault.vpm"
-
-engine = create_engine(f"sqlite:///{STORE_PATH}", echo=True, future=True)
+engine = create_engine(f"sqlite:///{settings.DATA_LOCATION}", echo=True, future=True)
 
 
 def create_tables():
