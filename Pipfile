@@ -12,6 +12,7 @@ argon2-cffi = "*"
 [dev-packages]
 black = "*"
 ipython = "*"
+pyside6 = "*"
 
 [requires]
 python_version = "3.11"
