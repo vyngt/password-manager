@@ -6,7 +6,9 @@ from conf import settings
 
 Base = declarative_base()
 
-engine = create_engine(f"sqlite:///{settings.DATA_LOCATION}", echo=True, future=True)
+engine = create_engine(
+    f"sqlite:///{settings.DATA_LOCATION}", echo=settings.DEBUG, future=True
+)
 
 
 def create_tables():
