@@ -1,4 +1,3 @@
-from typing import Any
 from PyQt6.QtWidgets import (
     QWidget,
     QTableView,
@@ -6,9 +5,7 @@ from PyQt6.QtWidgets import (
     QDialog,
     QLineEdit,
     QVBoxLayout,
-    QHBoxLayout,
     QFormLayout,
-    QPushButton,
 )
 from PyQt6.QtGui import QStandardItemModel
 
@@ -17,6 +14,7 @@ from sqlalchemy import update
 from core.db import get_session, Base
 from core.db.models import Item
 
+from .base import StandardButton
 
 __all__ = [
     "VaultForm",
@@ -34,7 +32,7 @@ class VaultFormSetField:
         self.password.setEchoMode(QLineEdit.EchoMode.Password)
 
 
-class VaultForm(QDialog):
+class VaultForm(QDialog, StandardButton):
     def __init__(self, parent: QWidget | None) -> None:
         super().__init__(parent)
         self.fields = VaultFormSetField()
@@ -49,7 +47,7 @@ class VaultForm(QDialog):
         layout = QVBoxLayout()
 
         layout.addWidget(self.create_form())
-        layout.addWidget(self.create_btn())
+        layout.addWidget(self.create_btn("Save", "Cancel"))
         self.setLayout(layout)
 
     def create_form(self):
@@ -61,21 +59,6 @@ class VaultForm(QDialog):
         form.addRow("Username", self.fields.username)
         form.addRow("Password", self.fields.password)
 
-        return container
-
-    def create_btn(self):
-        btn_accept = QPushButton("Save")
-        btn_cancel = QPushButton("Cancel")
-
-        btn_accept.clicked.connect(self.accept)
-        btn_cancel.clicked.connect(self.reject)
-
-        container = QWidget()
-
-        h_box = QHBoxLayout(container)
-        h_box.addStretch(1)
-        h_box.addWidget(btn_accept)
-        h_box.addWidget(btn_cancel)
         return container
 
     def get_data(self):
