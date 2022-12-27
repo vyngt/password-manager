@@ -67,14 +67,16 @@ class VaultForm(QDialog, StandardButton):
         username = self.fields.username.text()
         password = self.fields.password.text()
 
-        return name, url, username, password
+        data = {"name": name, "url": url, "username": username, "password": password}
+
+        return data
 
     def exec(self):
         ok = super().exec()
         if ok:
             data = self.get_data()
         else:
-            data = ("", "", "", "")
+            data = None
         return data, ok
 
 

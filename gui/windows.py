@@ -24,7 +24,7 @@ from PyQt6.QtCore import Qt
 
 from conf import settings
 
-
+from core.encryption import Encryptor
 from .vault import VaultItemTableView, Vault, VaultForm
 from .auth import LoginDialog, SetMasterPasswordDialog
 
@@ -36,7 +36,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
-        self.master_pwd = None
+        self.master_pwd: str = ""
         self.initialize()
 
     def initialize(self):
@@ -87,6 +87,7 @@ class MainWindow(QMainWindow):
                 f.write(pwd)
 
     def start(self):
+        self.encryptor = Encryptor(self.master_pwd)
         self.retrieve_items()
 
     def exit(self):
@@ -178,24 +179,29 @@ class MainWindow(QMainWindow):
         while self.model.rowCount() > 0:
             self.model.removeRow(0)
 
+    def perform_add_row(self, instance: Any):
+        position = self.model.rowCount()
+        items: list[QStandardItem] = []
+        for field in self.model.objects.fields:
+            _f = field.lower()
+            content = str(getattr(instance, _f))
+            if _f != "id":
+                content = self.encryptor.decrypt(content)
+            items.append(QStandardItem(content))
+        self.model.insertRow(position, items)
+
     def retrieve_items(self):
         self.clear_data()
-        for item in self.model.objects.select():
-            position = self.model.rowCount()
-            items: list[QStandardItem] = []
-            for c in range(len(self.model.objects.fields)):
-                content = QStandardItem(
-                    str(getattr(item, self.model.objects.fields[c].lower()))
-                )
-                items.append(content)
-            self.model.insertRow(position, items)
+        for instance in self.model.objects.select():
+            self.perform_add_row(instance)
 
     def add_item(self):
         form = VaultForm(self)
         data, ok = form.exec()
-        if ok:
-            name, url, username, password = data
-            print("Saved: ", data)
+        if ok and data:
+            data = {k: self.encryptor.encrypt(v) for k, v in data.items()}
+            instance = self.model.objects.insert(**data)
+            self.perform_add_row(instance)
 
     def update_item(self):
         pass

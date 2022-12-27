@@ -36,7 +36,11 @@ class Encryptor:
         self.__password = password
 
     def encrypt(self, data: str):
+        if not data:
+            return ""
         return encrypt_message(data, self.__password)
 
     def decrypt(self, enc_data: str):
+        if not enc_data:
+            return ""
         return decrypt_message(enc_data, self.__password)
