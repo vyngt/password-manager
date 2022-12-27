@@ -1,4 +1,5 @@
 import functools
+import sys
 from typing import Any
 from sqlalchemy.orm import Session
 
@@ -16,26 +17,32 @@ from PyQt6.QtWidgets import (
     QMainWindow,
     QDockWidget,
     QLayout,
+    QInputDialog,
 )
-from PyQt6.QtGui import QFont, QAction, QIcon, QStandardItem, QStandardItemModel
+from PyQt6.QtGui import QFont, QAction, QIcon, QStandardItem
 from PyQt6.QtCore import Qt
 
-from core.db import get_session
-from core.db.models import Item
 from conf import settings
 
+
 from .vault import VaultItemTableView, Vault, VaultForm
+from .auth import LoginDialog, SetMasterPasswordDialog
 
 __all__ = ["MainWindow"]
 
 
 class MainWindow(QMainWindow):
+    PROFILE = settings.PROFILE
+
     def __init__(self) -> None:
         super().__init__()
+        self.master_pwd = None
         self.initialize()
 
     def initialize(self):
         self.initializeUI()
+        self.authenticate()
+        self.start()
 
     def initializeUI(self):
         self.setMinimumSize(800, 480)
@@ -52,13 +59,47 @@ class MainWindow(QMainWindow):
         self.create_menu()
         self.create_dock_widgets()
 
+    def authenticate(self):
+        try:
+            hashed_master_pwd = ""
+            with open(self.PROFILE, "r") as f:
+                hashed_master_pwd = f.read()
+                self.login(hashed_master_pwd)
+
+        except FileNotFoundError:
+            self.register()
+
+    def login(self, hashed: str):
+        dialog = LoginDialog(self, hashed)
+        pwd, ok = dialog.exec()
+        if not ok or not pwd:
+            self.exit()
+
+        self.master_pwd = pwd
+
+    def register(self):
+        dialog = SetMasterPasswordDialog(self)
+        pwd, ok = dialog.exec()
+        if not ok or not pwd:
+            self.exit()
+        else:
+            with open(self.PROFILE, "w") as f:
+                f.write(pwd)
+
+    def start(self):
+        self.retrieve_items()
+
+    def exit(self):
+        self.close()
+
+        # Force exit, temp solution
+        sys.exit()
+
     def setup_layout(self):
         self.container = QWidget()
         vbox_layout = QVBoxLayout(self.container)
 
         self.table = self.create_table_view()
-        self.retrieve_items()
-
         vbox_layout.addWidget(self.create_search_widget())
         vbox_layout.addWidget(self.table)
 
