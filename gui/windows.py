@@ -1,4 +1,7 @@
 import functools
+from typing import Any
+from sqlalchemy.orm import Session
+
 from PyQt6.QtWidgets import (
     QWidget,
     QLabel,
@@ -13,18 +16,15 @@ from PyQt6.QtWidgets import (
     QMainWindow,
     QDockWidget,
     QLayout,
-    QInputDialog,
-    QTableWidget,
-    QTableWidgetItem,
-    QAbstractItemView,
-    QHeaderView,
 )
-from PyQt6.QtGui import QFont, QAction, QIcon
+from PyQt6.QtGui import QFont, QAction, QIcon, QStandardItem, QStandardItemModel
 from PyQt6.QtCore import Qt
 
 from core.db import get_session
 from core.db.models import Item
 from conf import settings
+
+from .vault import VaultItemTableView, Vault, VaultForm
 
 __all__ = ["MainWindow"]
 
@@ -56,7 +56,8 @@ class MainWindow(QMainWindow):
         self.container = QWidget()
         vbox_layout = QVBoxLayout(self.container)
 
-        self.table = self.create_table_widget()
+        self.table = self.create_table_view()
+        self.retrieve_items()
 
         vbox_layout.addWidget(self.create_search_widget())
         vbox_layout.addWidget(self.table)
@@ -76,24 +77,10 @@ class MainWindow(QMainWindow):
 
         return widget
 
-    def create_table_widget(self) -> QTableWidget:
-        headers = ("ID", "Name", "username", "URL")
-
-        table = QTableWidget()
-        table.setColumnCount(len(headers))
-        table.setHorizontalHeaderLabels(headers)
-        table.setSortingEnabled(True)
-        table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        table.horizontalHeader().setStretchLastSection(True)
-
-        with get_session() as session:
-            for item in session.query(Item).all():
-                position = table.rowCount()
-                table.insertRow(position)
-                for c in range(len(headers)):
-                    text = str(getattr(item, headers[c].lower()))
-                    table.setItem(position, c, QTableWidgetItem(text))
+    def create_table_view(self):
+        self.model = Vault()
+        table = VaultItemTableView()
+        table.setModel(self.model)
 
         return table
 
@@ -146,13 +133,25 @@ class MainWindow(QMainWindow):
 
         return dock_layout
 
+    def clear_data(self):
+        while self.model.rowCount() > 0:
+            self.model.removeRow(0)
+
     def retrieve_items(self):
-        with get_session() as session:
-            for item in session.query(Item).all():
-                print(item)
+        self.clear_data()
+        for item in self.model.objects.select():
+            position = self.model.rowCount()
+            items: list[QStandardItem] = []
+            for c in range(len(self.model.objects.fields)):
+                content = QStandardItem(
+                    str(getattr(item, self.model.objects.fields[c].lower()))
+                )
+                items.append(content)
+            self.model.insertRow(position, items)
 
     def add_item(self):
-        text, ok = QInputDialog.getText(self, "New Item", "Add Item")
+        a = VaultForm(self)
+        a.show()
 
     def update_item(self):
         pass
