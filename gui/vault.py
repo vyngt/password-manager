@@ -4,7 +4,6 @@ from PyQt6.QtWidgets import (
     QTableView,
     QAbstractItemView,
     QDialog,
-    QLabel,
     QLineEdit,
     QVBoxLayout,
     QHBoxLayout,
@@ -32,6 +31,7 @@ class VaultFormSetField:
         self.url = QLineEdit()
         self.username = QLineEdit()
         self.password = QLineEdit()
+        self.password.setEchoMode(QLineEdit.EchoMode.Password)
 
 
 class VaultForm(QDialog):
@@ -64,16 +64,35 @@ class VaultForm(QDialog):
         return container
 
     def create_btn(self):
-        btn_ok = QPushButton("OK")
+        btn_accept = QPushButton("Save")
         btn_cancel = QPushButton("Cancel")
-        btn_cancel.clicked.connect(self.close)
+
+        btn_accept.clicked.connect(self.accept)
+        btn_cancel.clicked.connect(self.reject)
 
         container = QWidget()
 
         h_box = QHBoxLayout(container)
-        h_box.addWidget(btn_ok)
+        h_box.addStretch(1)
+        h_box.addWidget(btn_accept)
         h_box.addWidget(btn_cancel)
         return container
+
+    def get_data(self):
+        name = self.fields.name.text()
+        url = self.fields.url.text()
+        username = self.fields.username.text()
+        password = self.fields.password.text()
+
+        return name, url, username, password
+
+    def exec(self):
+        ok = super().exec()
+        if ok:
+            data = self.get_data()
+        else:
+            data = ("", "", "", "")
+        return data, ok
 
 
 class VManager:

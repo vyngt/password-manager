@@ -150,8 +150,11 @@ class MainWindow(QMainWindow):
             self.model.insertRow(position, items)
 
     def add_item(self):
-        a = VaultForm(self)
-        a.show()
+        form = VaultForm(self)
+        data, ok = form.exec()
+        if ok:
+            name, url, username, password = data
+            print("Saved: ", data)
 
     def update_item(self):
         pass
