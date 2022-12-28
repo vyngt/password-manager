@@ -1,6 +1,7 @@
 import sys
 from typing import Any
 
+from base64 import urlsafe_b64encode as b64encode, urlsafe_b64decode as b64decode
 
 from PyQt6.QtWidgets import (
     QApplication,
@@ -56,8 +57,8 @@ class MainWindow(QMainWindow):
     def authenticate(self):
         try:
             hashed_master_pwd = ""
-            with open(self.PROFILE, "r") as f:
-                hashed_master_pwd = f.read()
+            with open(self.PROFILE, "rb") as f:
+                hashed_master_pwd = b64decode(f.read()).decode()
                 self.login(hashed_master_pwd)
 
         except FileNotFoundError:
@@ -77,8 +78,10 @@ class MainWindow(QMainWindow):
         if not ok or not pwd:
             self.exit()
         else:
-            with open(self.PROFILE, "w") as f:
-                f.write(pwd)
+            with open(self.PROFILE, "wb") as f:
+                h, p = pwd
+                f.write(b64encode(h.encode()))
+                self.master_pwd = p
 
     def start(self):
         self.encryptor = Encryptor(self.master_pwd)

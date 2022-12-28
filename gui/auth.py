@@ -100,14 +100,15 @@ class SetMasterPasswordDialog(QDialog, StandardButton):
         pw2 = self.password2.text()
         if pw1 and pw2 and pw1 == pw2:
             self.h = hasher.hash_password(pw1)
+            self.p = pw1
             if self.h:
                 return super().accept()
         self.message.setText("Password not match or empty")
 
     def exec(self):
         ok = super().exec()
-        if ok:
-            data = self.h
+        if ok and self.h:
+            data = self.h, self.p
         else:
             data = None
         return data, ok
