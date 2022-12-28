@@ -1,31 +1,25 @@
-import functools
 import sys
 from typing import Any
-from sqlalchemy.orm import Session
+
 
 from PyQt6.QtWidgets import (
+    QApplication,
     QWidget,
-    QLabel,
     QPushButton,
     QLineEdit,
-    QTextEdit,
-    QCheckBox,
-    QApplication,
-    QSpinBox,
     QVBoxLayout,
     QHBoxLayout,
     QMainWindow,
     QDockWidget,
     QLayout,
-    QInputDialog,
 )
-from PyQt6.QtGui import QFont, QAction, QIcon, QStandardItem
+from PyQt6.QtGui import QAction, QIcon, QStandardItem
 from PyQt6.QtCore import Qt
 
 from conf import settings
 
 from core.encryption import Encryptor
-from .vault import VaultItemTableView, Vault, VaultForm
+from .vault import VaultItemTableView, Vault, VaultForm, TVault
 from .auth import LoginDialog, SetMasterPasswordDialog
 
 __all__ = ["MainWindow"]
@@ -55,9 +49,9 @@ class MainWindow(QMainWindow):
 
     def setup_interface(self):
         self.setup_layout()
+        self.create_dock_widgets()
         self.create_actions()
         self.create_menu()
-        self.create_dock_widgets()
 
     def authenticate(self):
         try:
@@ -163,15 +157,31 @@ class MainWindow(QMainWindow):
         btn_refresh.clicked.connect(self.retrieve_items)
         btn_add = QPushButton("Add")
         btn_add.clicked.connect(self.add_item)
-        btn_view = QPushButton("View")
+        btn_copy = QPushButton("Copy")
+        btn_copy.clicked.connect(self.copy_password)
+        btn_edit = QPushButton("Edit")
+        btn_edit.clicked.connect(self.update_item)
+        btn_remove = QPushButton("Remove")
+        btn_remove.clicked.connect(self.delete_item)
+
+        for btn in (btn_edit, btn_copy, btn_remove):
+            btn.setEnabled(False)
 
         dock_layout = QVBoxLayout()
         dock_layout.addWidget(btn_refresh)
         dock_layout.addWidget(btn_add)
-        dock_layout.addWidget(btn_view)
+        dock_layout.addWidget(btn_copy)
+        dock_layout.addWidget(btn_edit)
+        dock_layout.addWidget(btn_remove)
 
         if end_stretch:
             dock_layout.addStretch(1)
+
+        def table_select_on_change():
+            for btn in (btn_edit, btn_copy, btn_remove):
+                btn.setEnabled(bool(self.table.selectionModel().selectedRows()))
+
+        self.table.selectionModel().selectionChanged.connect(table_select_on_change)
 
         return dock_layout
 
@@ -199,12 +209,37 @@ class MainWindow(QMainWindow):
         form = VaultForm(self)
         data, ok = form.exec()
         if ok and data:
-            data = {k: self.encryptor.encrypt(v) for k, v in data.items()}
-            instance = self.model.objects.insert(**data)
+            d = {k: self.encryptor.encrypt(v) for k, v in data.items()}  # type: ignore
+            instance = self.model.objects.insert(**d)
             self.perform_add_row(instance)
 
+    def copy_password(self):
+        _id = self.table.selectedIndexes()[0].data()
+        password = self.encryptor.decrypt(self.model.objects.get(_id).password)
+        QApplication.clipboard().setText(password)
+
     def update_item(self):
-        pass
+        row = self.table.selectedIndexes()
+        _id = row[0].data()
+        instance = self.model.objects.get(_id)
+
+        original = self.encryptor.bulk_decrypt(
+            {
+                "name": instance.name,
+                "url": instance.url,
+                "username": instance.username,
+                "password": instance.password,
+            }
+        )
+
+        form = VaultForm(self, data=original)  # type: ignore
+        data, ok = form.exec()
+        if ok and data:
+            enc_data = self.encryptor.bulk_encrypt(data)  # type: ignore
+            self.model.objects.update(_id, **enc_data)
+            self.retrieve_items()
 
     def delete_item(self):
-        pass
+        _id_obj = self.table.selectedIndexes()[0]
+        self.model.objects.delete(_id_obj.data())
+        self.model.removeRow(_id_obj.row())

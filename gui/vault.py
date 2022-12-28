@@ -1,3 +1,5 @@
+from typing import TypedDict
+
 from PyQt6.QtWidgets import (
     QWidget,
     QTableView,
@@ -23,6 +25,13 @@ __all__ = [
 ]
 
 
+class TVault(TypedDict):
+    name: str
+    url: str
+    username: str
+    password: str
+
+
 class VaultFormSetField:
     def __init__(self) -> None:
         self.name = QLineEdit()
@@ -33,15 +42,17 @@ class VaultFormSetField:
 
 
 class VaultForm(QDialog, StandardButton):
-    def __init__(self, parent: QWidget | None) -> None:
+    def __init__(self, parent: QWidget | None, data: TVault | None = None) -> None:
         super().__init__(parent)
         self.fields = VaultFormSetField()
+        self.data = data
         self.initialize()
 
     def initialize(self):
         self.setWindowTitle("Add Item")
         self.setMinimumSize(200, 200)
         self.initializeUI()
+        self.fill_form()
 
     def initializeUI(self):
         layout = QVBoxLayout()
@@ -49,6 +60,13 @@ class VaultForm(QDialog, StandardButton):
         layout.addWidget(self.create_form())
         layout.addWidget(self.create_btn("Save", "Cancel"))
         self.setLayout(layout)
+
+    def fill_form(self):
+        if not self.data:
+            return
+
+        for k, v in self.data.items():
+            getattr(self.fields, k).setText(v)
 
     def create_form(self):
         container = QWidget()
@@ -67,7 +85,12 @@ class VaultForm(QDialog, StandardButton):
         username = self.fields.username.text()
         password = self.fields.password.text()
 
-        data = {"name": name, "url": url, "username": username, "password": password}
+        data: TVault = {
+            "name": name,
+            "url": url,
+            "username": username,
+            "password": password,
+        }
 
         return data
 
@@ -93,6 +116,11 @@ class VManager:
         with get_session() as session:
             result = session.query(self.model).all()
         return result
+
+    def get(self, id: int | str):
+        with get_session() as session:
+            instance = session.query(self.model).get(id)
+        return instance
 
     def update(self, id: int | str, **kwargs):
         with get_session() as session:
