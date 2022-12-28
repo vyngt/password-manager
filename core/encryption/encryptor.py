@@ -40,7 +40,13 @@ class Encryptor:
             return ""
         return encrypt_message(data, self.__password)
 
+    def bulk_encrypt(self, data: dict[str, str]) -> dict[str, str]:
+        return {k: self.encrypt(v) for k, v in data.items()}
+
     def decrypt(self, enc_data: str):
         if not enc_data:
             return ""
         return decrypt_message(enc_data, self.__password)
+
+    def bulk_decrypt(self, enc_data: dict[str, str]) -> dict[str, str]:
+        return {k: self.decrypt(v) for k, v in enc_data.items()}
