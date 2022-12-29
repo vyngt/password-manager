@@ -42,9 +42,7 @@ class MainWindow(QMainWindow):
     def initializeUI(self):
         self.setMinimumSize(800, 480)
         self.setWindowTitle("V Password Manager")
-        self.setWindowIcon(
-            QIcon(str(settings.STATIC_ROOT / "images" / "white_fox_lg.png"))
-        )
+        self.setWindowIcon(QIcon(str(settings.STATIC_ROOT / "images" / "app_icon.ico")))
         self.setup_interface()
         self.show()
 
